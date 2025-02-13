@@ -38,11 +38,6 @@ jobs:
           python-version: '3.10'
           cache: 'pip'
 
-      - name: pip install
-        shell: bash
-        run: |
-          pip install -r requirements.txt
-
       - name: Setup Python Measurment
         uses: green-coding-solutions/eco-ci-energy-estimation@v4 # use hash or @vX here (See note below)
         with:
