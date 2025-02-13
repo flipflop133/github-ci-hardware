@@ -1,55 +1,56 @@
-name: CI Hardware Info
-
+name: Daily Tests with Energy Measurement
+run-name: Scheduled - DEV Branch
 on:
-  push:
-    branches:
-      - main
-  pull_request:
+  schedule:
+    - cron: '0 0 * * *'
+
+permissions:
+  read-all
 
 jobs:
-  check-hardware:
-    name: Gather Hardware Information
+  run-tests:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+      - name: Start Measurement
+        uses: green-coding-solutions/eco-ci-energy-estimation@v4 # use hash or @vX here (See note below)
+        with:
+          task: start-measurement
+        # continue-on-error: true # recommended setting for production. See notes below.
 
-      - name: Print Environment Variables
-        run: env | sort
 
-      - name: Print CPU Information
-        run: lscpu
+      - name: 'Checkout repository'
+        uses: actions/checkout@v4
+        with:
+          ref: 'dev'
+          submodules: 'true'
 
-      - name: Print Memory Information
-        run: free -h
+      - name: Checkout Repo Measurement
+        uses: green-coding-solutions/eco-ci-energy-estimation@v4 # use hash or @vX here (See note below)
+        with:
+          task: get-measurement
+          label: 'repo checkout'
+        # continue-on-error: true # recommended setting for production. See notes below.
 
-      - name: Print Disk Space Information
-        run: df -h
+      - name: setup python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: 'pip'
 
-      - name: Print Kernel and OS Info
-        run: uname -a
+      - name: pip install
+        shell: bash
+        run: |
+          pip install -r requirements.txt
 
-      - name: Print Detailed OS Info
-        run: cat /etc/os-release
+      - name: Setup Python Measurment
+        uses: green-coding-solutions/eco-ci-energy-estimation@v4 # use hash or @vX here (See note below)
+        with:
+          task: get-measurement
+          label: 'python setup'
+        # continue-on-error: true # recommended setting for production. See notes below.
 
-      - name: Print PCI Devices
-        run: lspci || echo "lspci not available"
-
-      - name: Print USB Devices
-        run: lsusb || echo "lsusb not available"
-
-      - name: Print Installed Packages
-        run: dpkg-query -W || echo "dpkg-query not available"
-
-      - name: Print Power Management Info
-        run: cat /sys/class/power_supply/BAT0/uevent || echo "No battery info available"
-
-      - name: Print Temperature Sensors
-        run: sensors || echo "sensors not available, try installing lm-sensors"
-
-      - name: Print Network Interface Details
-        run: ip addr show
-
-      - name: Print Running Processes
-        run: ps aux --sort=-%cpu | head -n 20
+      - name: Show Energy Results
+        uses: green-coding-solutions/eco-ci-energy-estimation@v4 # use hash or @vX here (See note below)
+        with:
+          task: display-results
+        # continue-on-error: true # recommended setting for production. See notes below.
